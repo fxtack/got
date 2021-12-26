@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+option go_package = "./;pb";
+
+message File {
+  bytes data = 1;
+}
+
+message ListFilesRequest {}
+
+message ListFilesResponse {
+  string info = 1;
+}
+
+message ChangeDirRequest {
+  string dstDir = 1;
+}
+
+message ChangeDirResponse {
+  string info = 1;
+}
+
+message UploadFileRequest {
+  bytes data = 1;
+}
+
+message UploadFileResponse {
+  bool ok = 1;
+}
+
+message DownloadFileRequest {
+  string filepath = 1;
+}
+
+message DownloadFileResponse {
+  bytes data = 1;
+}
+
+service GotService{
+  rpc ListFile(ListFilesRequest) returns (ListFilesResponse);
+  rpc ChangeDir(ChangeDirRequest) returns (ChangeDirResponse);
+  rpc UploadFile(stream UploadFileRequest) returns (UploadFileResponse);
+  rpc DownloadFile(DownloadFileRequest) returns (stream DownloadFileResponse);
+}
