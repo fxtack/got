@@ -109,6 +109,7 @@ func (d *defaultServer) UploadFile(stream GotService_UploadFileServer) error {
 	p, _ := peer.FromContext(stream.Context())
 	log.Printf("%-12s called from: %s\n", "UploadFile", p.Addr.String())
 
+	// TODO refactor it
 	var fileName string
 	var uploadType string
 	md, ok := metadata.FromIncomingContext(stream.Context())
@@ -179,7 +180,10 @@ func (d *defaultServer) DownloadFile(req *DownloadFileRequest, stream GotService
 			return err
 		}
 		mdMap["type"] = dirType
+
+		info, err = os.Stat(dirTarPath)
 		filePath = dirTarPath
+
 		defer func() {
 			_ = os.Remove(filePath)
 		}()
@@ -193,10 +197,6 @@ func (d *defaultServer) DownloadFile(req *DownloadFileRequest, stream GotService
 	}
 	defer file.Close()
 
-	info, err = file.Stat()
-	if err != nil {
-		return err
-	}
 	mdMap["size"] = strconv.FormatInt(info.Size(), 10)
 	md := metadata.New(mdMap)
 	err = stream.SetHeader(md)

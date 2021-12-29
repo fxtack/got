@@ -5,6 +5,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"got/internal"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -115,7 +116,7 @@ func upload(ctx *cli.Context) error {
 		return err
 	}
 
-	filePath := ctx.Args().First()
+	filePath := filepath.Clean(ctx.Args().First())
 	err = gotClient.UploadFile(filePath)
 	if err != nil {
 		return err
@@ -137,7 +138,7 @@ func download(ctx *cli.Context) error {
 		return err
 	}
 
-	filePath := ctx.Args().First()
+	filePath := filepath.Clean(ctx.Args().First())
 	err = gotClient.DownloadFile(filePath)
 	if err != nil {
 		return err
