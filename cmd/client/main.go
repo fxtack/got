@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"github.com/urfave/cli/v2"
 	"got/internal"
+	"net"
 	"os"
 	"path/filepath"
 	"time"
 )
+
+const defaultPort = "9876"
 
 var version = ""
 
@@ -65,7 +68,20 @@ func main() {
 
 func createClient(ctx *cli.Context) (internal.GotClient, error) {
 	addr := ctx.String("addr")
+	addr = parseAddr(addr)
 	return internal.CreateClient(addr)
+}
+
+func parseAddr(addr string) string {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		addr = net.JoinHostPort(addr, defaultPort)
+	} else {
+		if port == "" {
+			addr = net.JoinHostPort(host, defaultPort)
+		}
+	}
+	return addr
 }
 
 func list(ctx *cli.Context) error {
