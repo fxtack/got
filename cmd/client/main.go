@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/urfave/cli/v2"
-	"got/internal/client"
+	"got/internal"
 	"os"
 	"time"
 )
@@ -19,35 +19,35 @@ func main() {
 			Required: true,
 		},
 		&cli.BoolFlag{
-			Name: "time, t",
-			Aliases: []string{"t"},
-			Usage: "show time cost",
-			Value: false,
+			Name:     "time, t",
+			Aliases:  []string{"t"},
+			Usage:    "show time cost",
+			Value:    false,
 			Required: false,
 		},
 	}
 	app.Commands = []*cli.Command{
 		{
 			Name:    "list",
-			Aliases: []string{"l"},
+			Aliases: []string{"l", "ls", "ll"},
 			Usage:   "list remote directory content",
 			Action:  list,
 		},
 		{
 			Name:    "change",
-			Aliases: []string{"c"},
+			Aliases: []string{"c", "cd"},
 			Usage:   "change remote directory content",
 			Action:  change,
 		},
 		{
 			Name:    "upload",
-			Aliases: []string{"u"},
+			Aliases: []string{"u", "up"},
 			Usage:   "upload file to remote directory",
 			Action:  upload,
 		},
 		{
 			Name:    "download",
-			Aliases: []string{"d"},
+			Aliases: []string{"d", "down"},
 			Usage:   "download file from remote directory",
 			Action:  download,
 		},
@@ -59,9 +59,9 @@ func main() {
 	}
 }
 
-func createClient(ctx *cli.Context) (client.GotClient, error) {
+func createClient(ctx *cli.Context) (internal.GotClient, error) {
 	addr := ctx.String("addr")
-	return client.Create(addr)
+	return internal.CreateClient(addr)
 }
 
 func list(ctx *cli.Context) error {
@@ -71,7 +71,6 @@ func list(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-
 
 	filesInfo, err := gotClient.ListFiles()
 	if err != nil {

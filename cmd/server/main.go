@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/urfave/cli/v2"
-	"got/internal/server"
+	"got/internal"
 	"os"
 )
 
@@ -12,15 +12,15 @@ func main() {
 	app.Usage = "start Got server"
 	app.Flags = []cli.Flag{
 		&cli.IntFlag{
-			Name: "port, p",
+			Name:    "port, p",
 			Aliases: []string{"p"},
-			Value: 9876,
-			Usage: "server port",
+			Value:   9876,
+			Usage:   "server port",
 		},
 	}
 	app.Action = func(ctx *cli.Context) error {
 		var port = ctx.Int("port")
-		srv, err := server.Create(port)
+		srv, err := internal.CreateServer(port)
 		if err != nil {
 			return err
 		}

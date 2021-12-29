@@ -1,4 +1,4 @@
-package server
+package internal
 
 import (
 	"context"
@@ -7,16 +7,21 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
-	"got/internal/pb"
+	"got/pkg"
 	"io"
 	"io/ioutil"
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 	"strconv"
+	"time"
 )
 
-func Create(port int) (GotServer, error) {
+const dirType = "dir"
+const fileType = "file"
+
+func CreateServer(port int) (GotServer, error) {
 	server := &defaultServer{
 		port: port,
 	}
@@ -26,17 +31,17 @@ func Create(port int) (GotServer, error) {
 type GotServer interface {
 	init() error
 	Run() error
-	pb.GotServiceServer
+	GotServiceServer
 }
 
 type defaultServer struct {
-	port int
+	port       int
 	grpcServer *grpc.Server
 }
 
 func (d *defaultServer) init() error {
 	d.grpcServer = grpc.NewServer()
-	pb.RegisterGotServiceServer(d.grpcServer, &defaultServer{})
+	RegisterGotServiceServer(d.grpcServer, &defaultServer{})
 	return nil
 }
 
@@ -48,7 +53,7 @@ func (d *defaultServer) Run() error {
 	return d.grpcServer.Serve(lisn)
 }
 
-func (d *defaultServer) ListFile(ctx context.Context, req *pb.ListFilesRequest) (*pb.ListFilesResponse, error) {
+func (d *defaultServer) ListFile(ctx context.Context, req *ListFilesRequest) (*ListFilesResponse, error) {
 	p, _ := peer.FromContext(ctx)
 	log.Printf("%-12s called from: %s\n", "ListFile", p.Addr.String())
 
@@ -69,10 +74,10 @@ func (d *defaultServer) ListFile(ctx context.Context, req *pb.ListFilesRequest) 
 		)
 	}
 	info += fmt.Sprint("count: ", len(filesInfo))
-	return &pb.ListFilesResponse{Info: info}, nil
+	return &ListFilesResponse{Info: info}, nil
 }
 
-func (d *defaultServer) ChangeDir(ctx context.Context, req *pb.ChangeDirRequest) (*pb.ChangeDirResponse, error) {
+func (d *defaultServer) ChangeDir(ctx context.Context, req *ChangeDirRequest) (*ChangeDirResponse, error) {
 	p, _ := peer.FromContext(ctx)
 	log.Printf("%-12s called from: %s\n", "ChangeDir", p.Addr.String())
 
@@ -97,32 +102,39 @@ func (d *defaultServer) ChangeDir(ctx context.Context, req *pb.ChangeDirRequest)
 		)
 	}
 	info += fmt.Sprint("count: ", len(filesInfo))
-	return &pb.ChangeDirResponse{Info: info}, nil
+	return &ChangeDirResponse{Info: info}, nil
 }
 
-func (d *defaultServer) UploadFile(stream pb.GotService_UploadFileServer) error {
+func (d *defaultServer) UploadFile(stream GotService_UploadFileServer) error {
 	p, _ := peer.FromContext(stream.Context())
 	log.Printf("%-12s called from: %s\n", "UploadFile", p.Addr.String())
 
 	var fileName string
+	var uploadType string
 	md, ok := metadata.FromIncomingContext(stream.Context())
 	if ok {
 		fileName = md.Get("name")[0]
-	}else {
+		uploadType = md.Get("type")[0]
+	} else {
 		return errors.New("save file name not defined")
 	}
 
-	saveFile, err := os.OpenFile(fileName, os.O_CREATE | os.O_EXCL | os.O_WRONLY, 0664)
+	saveFile, err := os.OpenFile(fileName, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0664)
 	if err != nil {
 		return err
 	}
-	defer saveFile.Close()
+	defer func() {
+		_ = saveFile.Close()
+		if uploadType == dirType {
+			err = os.Remove(fileName)
+		}
+	}()
 
 	for {
 		resp, err := stream.Recv()
 		if err == io.EOF {
-			return stream.SendAndClose(&pb.UploadFileResponse{Ok: ok})
-		}else if err != nil {
+			break
+		} else if err != nil {
 			_ = os.Remove(fileName)
 			return err
 		}
@@ -133,24 +145,60 @@ func (d *defaultServer) UploadFile(stream pb.GotService_UploadFileServer) error 
 			return err
 		}
 	}
+
+	if uploadType == dirType {
+		if err = pkg.UnTar(fileName, "."); err != nil {
+			return err
+		}
+	}
+	return stream.SendAndClose(&UploadFileResponse{Ok: ok})
 }
 
-func (d *defaultServer) DownloadFile(req *pb.DownloadFileRequest, stream pb.GotService_DownloadFileServer) error {
+func (d *defaultServer) DownloadFile(req *DownloadFileRequest, stream GotService_DownloadFileServer) error {
 	p, _ := peer.FromContext(stream.Context())
 	log.Printf("%-12s called from: %s\n", "DownloadFile", p.Addr.String())
 
+	var err error
 	var filePath = req.Filepath
+	var mdMap = make(map[string]string)
+	defer func() {
+		if err != nil {
+			_ = stream.SendHeader(metadata.Pairs("err", err.Error()))
+		}
+	}()
+
+	info, err := os.Stat(filePath)
+	if err != nil {
+		return err
+	}
+	if info.IsDir() {
+		dirTarPath := filepath.Join(filepath.Dir(filePath),
+			fmt.Sprintf("%s%d.tar", filepath.Base(filePath), time.Now().Unix()))
+		err := pkg.Tar(filePath, dirTarPath)
+		if err != nil {
+			return err
+		}
+		mdMap["type"] = dirType
+		filePath = dirTarPath
+		defer func() {
+			_ = os.Remove(filePath)
+		}()
+	} else {
+		mdMap["type"] = fileType
+	}
+
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0664)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	stat, err := file.Stat()
+	info, err = file.Stat()
 	if err != nil {
 		return err
 	}
-	md := metadata.New(map[string]string{"size": strconv.FormatInt(stat.Size(), 10)})
+	mdMap["size"] = strconv.FormatInt(info.Size(), 10)
+	md := metadata.New(mdMap)
 	err = stream.SetHeader(md)
 	if err != nil {
 		return err
@@ -167,7 +215,7 @@ func (d *defaultServer) DownloadFile(req *pb.DownloadFileRequest, stream pb.GotS
 		if n < len(chunk) {
 			chunk = chunk[:n]
 		}
-		err = stream.Send(&pb.DownloadFileResponse{
+		err = stream.Send(&DownloadFileResponse{
 			Data: chunk,
 		})
 		if err != nil {
@@ -176,4 +224,3 @@ func (d *defaultServer) DownloadFile(req *pb.DownloadFileRequest, stream pb.GotS
 	}
 	return nil
 }
-
