@@ -94,6 +94,8 @@ func (d *defaultClient) UploadFile(filePath string) error {
 		defer func() {
 			err = os.Remove(filePath)
 		}()
+	} else {
+		mdMap["type"] = fileType
 	}
 	mdMap["name"] = filePath
 

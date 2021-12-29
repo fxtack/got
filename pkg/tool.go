@@ -30,7 +30,7 @@ func Tar(src string, dst string) error {
 		if err != nil {
 			return err
 		}
-		header.Name = path
+		header.Name = filepath.ToSlash(path)
 		if err := tarWriter.WriteHeader(header); err != nil {
 			return err
 		}
@@ -82,14 +82,6 @@ func UnTar(src string, dst string) error {
 		}
 	}
 	return err
-}
-
-// UnTarAndRemove is called to unzip the tar file and remove tar file.
-func UnTarAndRemove(src string, dst string) error {
-	if err := UnTar(src, dst); err != nil {
-		return err
-	}
-	return os.Remove(src)
 }
 
 func ProcessBar(tag string, start int64, end int64, push <-chan int64, ctx context.Context) (<-chan struct{}, error) {

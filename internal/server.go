@@ -114,10 +114,14 @@ func (d *defaultServer) UploadFile(stream GotService_UploadFileServer) error {
 	var uploadType string
 	md, ok := metadata.FromIncomingContext(stream.Context())
 	if ok {
-		fileName = md.Get("name")[0]
-		uploadType = md.Get("type")[0]
+		if n := md.Get("name"); n != nil {
+			fileName = n[0]
+		}
+		if t := md.Get("type"); t != nil {
+			uploadType = t[0]
+		}
 	} else {
-		return errors.New("save file name not defined")
+		return errors.New("file name not defined")
 	}
 
 	saveFile, err := os.OpenFile(fileName, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0664)
