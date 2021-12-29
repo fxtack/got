@@ -7,8 +7,11 @@ import (
 	"os"
 )
 
+var version string
+
 func main() {
 	app := cli.NewApp()
+	app.Version = version
 	app.Usage = "start Got server"
 	app.Flags = []cli.Flag{
 		&cli.IntFlag{

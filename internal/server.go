@@ -109,7 +109,6 @@ func (d *defaultServer) UploadFile(stream GotService_UploadFileServer) error {
 	p, _ := peer.FromContext(stream.Context())
 	log.Printf("%-12s called from: %s\n", "UploadFile", p.Addr.String())
 
-	// TODO refactor it
 	var fileName string
 	var uploadType string
 	md, ok := metadata.FromIncomingContext(stream.Context())

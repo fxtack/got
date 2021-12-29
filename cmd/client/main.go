@@ -9,8 +9,11 @@ import (
 	"time"
 )
 
+var version = ""
+
 func main() {
 	app := cli.NewApp()
+	app.Version = version
 	app.Usage = "got is a simply tool for upload file to remote server"
 	app.Flags = []cli.Flag{
 		&cli.StringFlag{

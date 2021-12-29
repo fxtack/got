@@ -66,10 +66,10 @@ func UnTar(src string, dst string) error {
 		info := header.FileInfo()
 		path := filepath.Join(dst, header.Name)
 		if header.Typeflag == tar.TypeDir {
-			_ = os.MkdirAll(path, info.Mode().Perm())
-			_ = os.Chmod(path, info.Mode().Perm())
+			_ = os.MkdirAll(path, os.ModeDir|0755)
+			_ = os.Chmod(path, os.ModeDir|0755)
 		} else {
-			_ = os.MkdirAll(filepath.Dir(path), os.ModeDir)
+			_ = os.MkdirAll(filepath.Dir(path), os.ModeDir|0755)
 			file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0644)
 			if err != nil {
 				return err
