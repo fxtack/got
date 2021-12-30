@@ -140,7 +140,6 @@ func upload(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("upload finish")
 
 	cost := time.Since(now)
 	if ctx.Bool("time") {
@@ -162,7 +161,6 @@ func download(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("download finish")
 
 	cost := time.Since(now)
 	if ctx.Bool("time") {

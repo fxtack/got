@@ -123,7 +123,7 @@ func (d *defaultServer) UploadFile(stream GotService_UploadFileServer) error {
 		return errors.New("file name not defined")
 	}
 
-	saveFile, err := os.OpenFile(fileName, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0664)
+	saveFile, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY, 0664)
 	if err != nil {
 		return err
 	}

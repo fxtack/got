@@ -92,14 +92,15 @@ func ProcessBar(tag string, start int64, end int64, push <-chan int64, ctx conte
 	go func(int64, int64, <-chan struct{}) {
 		var barLen = 16
 		var totalProgress = end - start
-		var stepProgress = totalProgress / int64(barLen)
+		var stepProgress = totalProgress
 		var currentStepProgress = stepProgress
 
+		fmt.Printf("\r%-12s%-12s: [%s]", tag, "processing", strings.Repeat("-", barLen))
 		for i := 0; i < barLen; {
 			select {
 			case progress := <-push:
-				currentStepProgress -= progress
-				for ; currentStepProgress <= 0; currentStepProgress += stepProgress {
+				currentStepProgress -= progress * int64(barLen)
+				for ; currentStepProgress <= 0 && i < barLen; currentStepProgress += stepProgress {
 					fmt.Printf("\r%-12s%-12s: [%s%s]", tag, "processing", strings.Repeat("█", i),
 						strings.Repeat("-", barLen-i))
 					i++
@@ -110,7 +111,7 @@ func ProcessBar(tag string, start int64, end int64, push <-chan int64, ctx conte
 				return
 			}
 		}
-		fmt.Printf("\r%-12s%-12s: [%s]\n", tag, "finish", strings.Repeat("█", barLen))
+		fmt.Printf("\r%-12s%-12s: [%s]", tag, "finish", strings.Repeat("█", barLen))
 		processCh <- struct{}{}
 		close(processCh)
 	}(start, end, processCh)
