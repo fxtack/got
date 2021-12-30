@@ -1,5 +1,7 @@
 # Got
 
+------
+
 ## 简介
 
 got 是一个由 Go 语言实现的小工具，用于从远程主机查看、下载、上传文件。
@@ -44,6 +46,7 @@ got
 │     └── message.proto
 └── README.md
 ```
+-----
 
 ## 部署指南
 
@@ -67,6 +70,8 @@ $ go run cmd/server/main.go -p 8008
 ```
 
 > 注意：运行服务器的目录将会作为 Got 客户端操作的起始目录。
+
+-----
 
 ## 使用指南
 
@@ -93,6 +98,8 @@ GLOBAL OPTIONS:
    --time, -t        show time cost (default: false)
    --help, -h        show help (default: false)
 ```
+
+----
 
 ## 使用示例
 
@@ -152,6 +159,7 @@ $ got -a 192.168.137.86 cd ..
 drwxr-xr-x  test        4096
 count: 1
 ```
+-----
 
 ## 提示与故障排查
 
