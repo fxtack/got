@@ -32,7 +32,7 @@ got
 │     ├── client
 │     │     └── main.go
 │     └── server
-│       └── main.go
+│           └── main.go
 ├── go.mod
 ├── go.sum
 ├── internal
